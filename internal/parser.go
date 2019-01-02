@@ -1,8 +1,9 @@
 package internal
 
 import (
-	"github.com/alecthomas/participle"
 	"io"
+
+	"github.com/alecthomas/participle"
 )
 
 var parser = participle.MustBuild(&Root{})

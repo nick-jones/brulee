@@ -214,4 +214,3 @@ func (c *Compiler) nextScratchPos() ScratchPosition {
 func (c *Compiler) Instructions() []Instruction {
 	return c.ins.Instructions()
 }
-

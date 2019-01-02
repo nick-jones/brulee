@@ -2,10 +2,11 @@ package brulee
 
 import (
 	"fmt"
-	"github.com/DATA-DOG/godog"
-	"github.com/DATA-DOG/godog/gherkin"
 	"strconv"
 	"strings"
+
+	"github.com/DATA-DOG/godog"
+	"github.com/DATA-DOG/godog/gherkin"
 )
 
 var (

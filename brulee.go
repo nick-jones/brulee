@@ -1,10 +1,11 @@
 package brulee
 
 import (
-	"github.com/nick-jones/brulee/internal"
-	"github.com/olekukonko/tablewriter"
 	"io"
 	"strconv"
+
+	"github.com/nick-jones/brulee/internal"
+	"github.com/olekukonko/tablewriter"
 )
 
 func Compile(r io.Reader) (Program, error) {
