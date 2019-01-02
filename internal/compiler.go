@@ -221,7 +221,7 @@ func operationFromScoreChange(sc ScoreChange) (op Operation, err error) {
 	case "=":
 		op = OperationSetScore
 	default:
-		err = fmt.Errorf("unknwon operation %+v", sc)
+		err = fmt.Errorf("unknown operation %+v", sc)
 	}
 	return
 }
