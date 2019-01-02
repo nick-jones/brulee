@@ -23,6 +23,14 @@ func Compile(r io.Reader) (Program, error) {
 	return program, nil
 }
 
+func MustCompile(r io.Reader) Program {
+	program, err := Compile(r)
+	if err != nil {
+		panic(err)
+	}
+	return program
+}
+
 type Program struct {
 	ins []internal.Instruction
 }
