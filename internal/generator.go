@@ -22,6 +22,9 @@ func (ig *InstructionsGenerator) Generate(root Root) {
 	for _, s := range root.Statements {
 		ig.evaluateStatement(s)
 	}
+	ig.buf.Append(Instruction{
+		Operation: OperationNoop,
+	})
 }
 
 func (ig *InstructionsGenerator) evaluateStatement(s Statement) {
@@ -44,9 +47,6 @@ func (ig *InstructionsGenerator) evaluateRule(rule Rule) {
 		Operation: OperationJumpIfZero,
 		Operand1:  ScratchOperand{Pos: scratch},
 		Operand2:  InstructionPositionOperand{Pos: ig.buf.Head()},
-	})
-	ig.buf.Append(Instruction{
-		Operation: OperationNoop,
 	})
 }
 
