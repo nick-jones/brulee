@@ -1,4 +1,4 @@
-package brulee
+package internal
 
 import "fmt"
 
@@ -49,51 +49,51 @@ type Operand interface {
 }
 
 type VarOperand struct {
-	name string
+	Name string
 }
 
 func (vo VarOperand) String() string {
-	return fmt.Sprintf("var(%s)", vo.name)
+	return fmt.Sprintf("var(%s)", vo.Name)
 }
 
 type IntOperand struct {
-	value int
+	Value int
 }
 
 func (io IntOperand) String() string {
-	return fmt.Sprintf("int(%d)", io.value)
+	return fmt.Sprintf("int(%d)", io.Value)
 }
 
 type StringOperand struct {
-	value string
+	Value string
 }
 
 func (so StringOperand) String() string {
-	return fmt.Sprintf(`string("%s")`, so.value)
+	return fmt.Sprintf(`string("%s")`, so.Value)
 }
 
 type ScratchOperand struct {
-	pos ScratchPosition
+	Pos ScratchPosition
 }
 
 func (so ScratchOperand) String() string {
-	return so.pos.String()
+	return so.Pos.String()
 }
 
 type ScoreOperand struct {
-	name string
+	Name string
 }
 
 func (so ScoreOperand) String() string {
-	return fmt.Sprintf("score(%s)", so.name)
+	return fmt.Sprintf("score(%s)", so.Name)
 }
 
 type InstructionPositionOperand struct {
-	pos int
+	Pos int
 }
 
 func (so InstructionPositionOperand) String() string {
-	return fmt.Sprintf(`->%d`, so.pos)
+	return fmt.Sprintf(`->%d`, so.Pos)
 }
 
 type ScratchPosition uint
@@ -124,28 +124,28 @@ func (i Instruction) StringSlice() []string {
 	return parts
 }
 
-type instructionsBuffer struct {
+type InstructionsBuffer struct {
 	ins []Instruction
 }
 
-func (i *instructionsBuffer) Append(in Instruction) {
+func (i *InstructionsBuffer) Append(in Instruction) {
 	i.ins = append(i.ins, in)
 }
 
-func (i *instructionsBuffer) Reserve() int {
+func (i *InstructionsBuffer) Reserve() int {
 	pos := len(i.ins)
 	i.Append(Instruction{})
 	return pos
 }
 
-func (i *instructionsBuffer) Head() int {
+func (i *InstructionsBuffer) Head() int {
 	return len(i.ins)
 }
 
-func (i *instructionsBuffer) Replace(pos int, in Instruction) {
+func (i *InstructionsBuffer) Replace(pos int, in Instruction) {
 	i.ins[pos] = in
 }
 
-func (i *instructionsBuffer) Instructions() []Instruction {
+func (i *InstructionsBuffer) Instructions() []Instruction {
 	return i.ins
 }

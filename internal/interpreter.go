@@ -1,4 +1,4 @@
-package brulee
+package internal
 
 import (
 	"fmt"
@@ -9,11 +9,20 @@ type Interpreter struct {
 	ins     []Instruction
 	vars    map[string]string
 	scratch map[ScratchPosition]bool
-	scores  Scores
+	scores  map[string]int
 	err     error
 }
 
-func (i *Interpreter) Interpret() {
+func NewInterpreter(ins []Instruction, vars map[string]string) *Interpreter {
+	return &Interpreter{
+		ins:     ins,
+		vars:    vars,
+		scratch: map[ScratchPosition]bool{},
+		scores:  map[string]int{},
+	}
+}
+
+func (i *Interpreter) Run() {
 	pos := 0
 	for pos < len(i.ins) {
 		ins := i.ins[pos]
@@ -75,7 +84,7 @@ func (i *Interpreter) Interpret() {
 	}
 }
 
-func (i *Interpreter) Scores() Scores {
+func (i *Interpreter) Scores() map[string]int {
 	return i.scores
 }
 
@@ -92,13 +101,13 @@ func (i *Interpreter) setErr(err error) {
 func (i *Interpreter) operandsEqual(op1, op2 Operand) bool {
 	switch o := op1.(type) {
 	case IntOperand:
-		return o.value == i.intFromOperand(op2)
+		return o.Value == i.intFromOperand(op2)
 	case StringOperand:
-		return o.value == i.stringFromOperand(op2)
+		return o.Value == i.stringFromOperand(op2)
 	case ScoreOperand:
-		return i.scores[o.name] == i.intFromOperand(op2)
+		return i.scores[o.Name] == i.intFromOperand(op2)
 	case VarOperand:
-		return i.vars[o.name] == i.stringFromOperand(op2)
+		return i.vars[o.Name] == i.stringFromOperand(op2)
 	default:
 		i.setErr(fmt.Errorf("unexpected operand of type %T for equality check", op1))
 	}
@@ -108,9 +117,9 @@ func (i *Interpreter) operandsEqual(op1, op2 Operand) bool {
 func (i *Interpreter) intFromOperand(op Operand) (v int) {
 	switch o := op.(type) {
 	case IntOperand:
-		v = o.value
+		v = o.Value
 	case ScoreOperand:
-		v = i.scores[o.name]
+		v = i.scores[o.Name]
 	default:
 		i.setErr(fmt.Errorf("could not coerce operand of type %T into int", op))
 	}
@@ -120,9 +129,9 @@ func (i *Interpreter) intFromOperand(op Operand) (v int) {
 func (i *Interpreter) stringFromOperand(op Operand) (s string) {
 	switch o := op.(type) {
 	case StringOperand:
-		s = o.value
+		s = o.Value
 	case VarOperand:
-		s = i.vars[o.name]
+		s = i.vars[o.Name]
 	default:
 		i.setErr(fmt.Errorf("could not coerce operand of type %T into string", op))
 	}
@@ -132,7 +141,7 @@ func (i *Interpreter) stringFromOperand(op Operand) (s string) {
 func (i *Interpreter) instructionPositionFromOperand(op Operand) (p int) {
 	switch o := op.(type) {
 	case InstructionPositionOperand:
-		p = o.pos
+		p = o.Pos
 	default:
 		i.setErr(fmt.Errorf("could not coerce operand of type %T into instruction position", op))
 	}
@@ -142,7 +151,7 @@ func (i *Interpreter) instructionPositionFromOperand(op Operand) (p int) {
 func (i *Interpreter) scratchVarFromOperand(op Operand) (b bool) {
 	switch o := op.(type) {
 	case ScratchOperand:
-		b = i.scratch[o.pos]
+		b = i.scratch[o.Pos]
 	default:
 		i.setErr(fmt.Errorf("could not coerce operand of type %T into scratch variable", op))
 	}
@@ -152,7 +161,7 @@ func (i *Interpreter) scratchVarFromOperand(op Operand) (b bool) {
 func (i *Interpreter) scoreNameFromOperand(op Operand) (s string) {
 	switch o := op.(type) {
 	case ScoreOperand:
-		s = o.name
+		s = o.Name
 	default:
 		i.setErr(fmt.Errorf("could not coerce operand of type %T into score", op))
 	}

@@ -1,70 +1,66 @@
-package brulee
+package internal
 
 import "fmt"
 
-func Compile(r Root) Program {
-	c := &compiler{
-		ins: &instructionsBuffer{},
-	}
-	c.evaluateRoot(r)
-	return Program{
-		ins: c.ins.Instructions(),
-	}
-}
-
-type compiler struct {
-	ins        *instructionsBuffer
+type Compiler struct {
+	ins        *InstructionsBuffer
 	scratchPos uint
 }
 
-func (c *compiler) evaluateRoot(root Root) {
+func NewCompiler() *Compiler {
+	return &Compiler{
+		ins: &InstructionsBuffer{},
+	}
+}
+
+func (c *Compiler) Compile(root Root) {
 	for _, s := range root.Statements {
-		c.evaluateRootStatement(s)
+		c.evaluateStatement(s)
 	}
 	return
 }
 
-func (c *compiler) evaluateRootStatement(rs RootStatement) {
+func (c *Compiler) evaluateStatement(s Statement) {
 	switch {
-	case rs.ScoreChange != nil:
-		c.evaluateScoreChange(*rs.ScoreChange)
-	case rs.Rule != nil:
-		c.evaluateRule(*rs.Rule)
+	case s.ScoreChange != nil:
+		c.evaluateScoreChange(*s.ScoreChange)
+	case s.Rule != nil:
+		c.evaluateRule(*s.Rule)
 	default:
 		panic("could not resolve score change or rule")
 	}
 }
 
-func (c *compiler) evaluateRule(rule Rule) {
+func (c *Compiler) evaluateRule(rule Rule) {
 	scratch := c.nextScratchPos()
 	c.evaluateExpression(rule.Expression, scratch)
 	pos := c.ins.Reserve()
 	c.evaluateConsequences(rule.Consequences)
 	c.ins.Replace(pos, Instruction{
 		Operation: OperationJumpIfZero,
-		Operand1:  ScratchOperand{pos: scratch},
-		Operand2:  InstructionPositionOperand{pos: c.ins.Head()},
+		Operand1:  ScratchOperand{Pos: scratch},
+		Operand2:  InstructionPositionOperand{Pos: c.ins.Head()},
 	})
 	c.ins.Append(Instruction{
 		Operation: OperationNoop,
 	})
 }
 
-func (c *compiler) evaluateExpression(e Expression, res ScratchPosition) {
+func (c *Compiler) evaluateExpression(e Expression, res ScratchPosition) {
 	if len(e.Or) > 1 {
-		positions := map[int]ScratchPosition{}
+		reserved := map[int]ScratchPosition{}
 		for _, or := range e.Or {
 			inner := c.nextScratchPos()
 			c.evaluateOrExpression(or, inner)
 			pos := c.ins.Reserve()
-			positions[pos] = inner
+			reserved[pos] = inner
 		}
-		for p, pos := range positions {
+		for p, pos := range reserved {
 			c.ins.Replace(p, Instruction{
 				Operation: OperationJumpIfNotZero,
 				Ret:       res,
-				Operand1:  ScratchOperand{pos: pos},
-				Operand2:  InstructionPositionOperand{pos: c.ins.Head()},
+				Operand1:  ScratchOperand{Pos: pos},
+				Operand2:  InstructionPositionOperand{Pos: c.ins.Head()},
 			})
 		}
 	} else {
@@ -72,7 +68,7 @@ func (c *compiler) evaluateExpression(e Expression, res ScratchPosition) {
 	}
 }
 
-func (c *compiler) evaluateOrExpression(or OrExpression, res ScratchPosition) {
+func (c *Compiler) evaluateOrExpression(or OrExpression, res ScratchPosition) {
 	if len(or.And) > 1 {
 		reserved := map[int]ScratchPosition{}
 		for _, coe := range or.And {
@@ -85,21 +81,21 @@ func (c *compiler) evaluateOrExpression(or OrExpression, res ScratchPosition) {
 			c.ins.Replace(p, Instruction{
 				Operation: OperationJumpIfZero,
 				Ret:       res,
-				Operand1:  ScratchOperand{pos: pos},
-				Operand2:  InstructionPositionOperand{pos: c.ins.Head()},
+				Operand1:  ScratchOperand{Pos: pos},
+				Operand2:  InstructionPositionOperand{Pos: c.ins.Head()},
 			})
 		}
 		c.ins.Append(Instruction{
 			Operation: OperationNegate,
 			Ret:       res,
-			Operand1:  ScratchOperand{pos: res},
+			Operand1:  ScratchOperand{Pos: res},
 		})
 	} else {
 		c.evaluateConditionOrExpression(or.And[0], res)
 	}
 }
 
-func (c *compiler) evaluateConditionOrExpression(coe ConditionOrExpression, res ScratchPosition) {
+func (c *Compiler) evaluateConditionOrExpression(coe ConditionOrExpression, res ScratchPosition) {
 	switch {
 	case coe.Condition != nil:
 		c.evaluateCondition(*coe.Condition, res)
@@ -110,7 +106,7 @@ func (c *compiler) evaluateConditionOrExpression(coe ConditionOrExpression, res 
 	}
 }
 
-func (c *compiler) evaluateCondition(cond Condition, res ScratchPosition) {
+func (c *Compiler) evaluateCondition(cond Condition, res ScratchPosition) {
 	c.ins.Append(Instruction{
 		Operation: operationFromEqualityString(cond.Op),
 		Ret:       res,
@@ -119,13 +115,13 @@ func (c *compiler) evaluateCondition(cond Condition, res ScratchPosition) {
 	})
 }
 
-func (c *compiler) evaluateConsequences(cons Consequences) {
+func (c *Compiler) evaluateConsequences(cons Consequences) {
 	for _, cs := range cons.Consequences {
 		c.evaluateConsequent(cs)
 	}
 }
 
-func (c *compiler) evaluateConsequent(cons Consequent) {
+func (c *Compiler) evaluateConsequent(cons Consequent) {
 	switch {
 	case cons.ScoreChange != nil:
 		c.evaluateScoreChange(*cons.ScoreChange)
@@ -136,10 +132,10 @@ func (c *compiler) evaluateConsequent(cons Consequent) {
 	}
 }
 
-func (c *compiler) evaluateScoreChange(sc ScoreChange) {
+func (c *Compiler) evaluateScoreChange(sc ScoreChange) {
 	c.ins.Append(Instruction{
 		Operation: operationFromScoreChange(sc),
-		Operand1:  ScoreOperand{name: sc.Score.Name},
+		Operand1:  ScoreOperand{Name: sc.Score.Name},
 		Operand2:  operandFromIntValue(sc.Value),
 	})
 }
@@ -171,13 +167,13 @@ func operationFromEqualityString(s string) (op Operation) {
 func operandFromMixedValue(mv MixedValue) (op Operand) {
 	switch {
 	case mv.Var != nil:
-		op = VarOperand{name: *mv.Var}
+		op = VarOperand{Name: *mv.Var}
 	case mv.String != nil:
-		op = StringOperand{value: *mv.String}
+		op = StringOperand{Value: *mv.String}
 	case mv.Int != nil:
-		op = IntOperand{value: *mv.Int}
+		op = IntOperand{Value: *mv.Int}
 	case mv.Score != nil:
-		op = ScoreOperand{name: (*mv.Score).Name}
+		op = ScoreOperand{Name: (*mv.Score).Name}
 	default:
 		panic("unresolvable operand: " + fmt.Sprintf("%+v", mv))
 	}
@@ -187,9 +183,9 @@ func operandFromMixedValue(mv MixedValue) (op Operand) {
 func operandFromIntValue(iv IntValue) (op Operand) {
 	switch {
 	case iv.Int != nil:
-		op = IntOperand{value: *iv.Int}
+		op = IntOperand{Value: *iv.Int}
 	case iv.Score != nil:
-		op = ScoreOperand{name: (*iv.Score).Name}
+		op = ScoreOperand{Name: (*iv.Score).Name}
 	default:
 		panic("unresolvable operand: " + fmt.Sprintf("%+v", iv))
 	}
@@ -210,7 +206,12 @@ func operationFromScoreChange(sc ScoreChange) (op Operation) {
 	return
 }
 
-func (c *compiler) nextScratchPos() ScratchPosition {
+func (c *Compiler) nextScratchPos() ScratchPosition {
 	c.scratchPos++
 	return ScratchPosition(c.scratchPos)
 }
+
+func (c *Compiler) Instructions() []Instruction {
+	return c.ins.Instructions()
+}
+

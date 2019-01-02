@@ -5,21 +5,19 @@ import (
 	"github.com/DATA-DOG/godog"
 	"github.com/DATA-DOG/godog/gherkin"
 	"strconv"
+	"strings"
 )
 
 var (
 	program Program
 	vars    map[string]string
-	scores  Scores
+	scores  map[string]int
 )
 
 func theProgram(p *gherkin.DocString) error {
-	rules, err := ParseString(p.Content)
-	if err != nil {
-		return err
-	}
-	program = Compile(rules)
-	return nil
+	var err error
+	program, err = Compile(strings.NewReader(p.Content))
+	return err
 }
 
 func variables(table *gherkin.DataTable) error {
@@ -63,7 +61,7 @@ func FeatureContext(s *godog.Suite) {
 	s.BeforeScenario(func(i interface{}) {
 		program = Program{}
 		vars = map[string]string{}
-		scores = make(Scores)
+		scores = map[string]int{}
 	})
 	s.Step(`^the program:$`, theProgram)
 	s.Step(`^variables:$`, variables)

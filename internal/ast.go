@@ -1,10 +1,10 @@
-package brulee
+package internal
 
 type Root struct {
-	Statements []RootStatement `@@*`
+	Statements []Statement `@@*`
 }
 
-type RootStatement struct {
+type Statement struct {
 	Rule        *Rule        `@@`
 	ScoreChange *ScoreChange `| @@`
 }
