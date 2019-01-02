@@ -41,12 +41,7 @@ type MixedValue struct {
 }
 
 type Consequences struct {
-	Consequences []Consequent `@@*`
-}
-
-type Consequent struct {
-	ScoreChange *ScoreChange `@@`
-	SubRule     *Rule        `| @@`
+	Consequences []Statement `@@*`
 }
 
 type ScoreChange struct {

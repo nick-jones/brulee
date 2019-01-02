@@ -136,19 +136,8 @@ func (c *Compiler) evaluateCondition(cond Condition, res ScratchPosition) {
 }
 
 func (c *Compiler) evaluateConsequences(cons Consequences) {
-	for _, cs := range cons.Consequences {
-		c.evaluateConsequent(cs)
-	}
-}
-
-func (c *Compiler) evaluateConsequent(cons Consequent) {
-	switch {
-	case cons.ScoreChange != nil:
-		c.evaluateScoreChange(*cons.ScoreChange)
-	case cons.SubRule != nil:
-		c.evaluateRule(*cons.SubRule)
-	default:
-		c.setErr(fmt.Errorf("could not resolve score change or sub rule from %+v", cons))
+	for _, s := range cons.Consequences {
+		c.evaluateStatement(s)
 	}
 }
 
