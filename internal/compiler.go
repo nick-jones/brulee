@@ -1,6 +1,10 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/pkg/errors"
+)
 
 type Compiler struct {
 	ins        *InstructionsBuffer
@@ -108,11 +112,26 @@ func (c *Compiler) evaluateConditionOrExpression(coe ConditionOrExpression, res 
 }
 
 func (c *Compiler) evaluateCondition(cond Condition, res ScratchPosition) {
+	op, err := operationFromEqualityString(cond.Op)
+	if err != nil {
+		c.setErr(errors.Wrap(err, "failed to map condition operation"))
+		return
+	}
+	operand1, err := operandFromMixedValue(cond.LeftValue)
+	if err != nil {
+		c.setErr(errors.Wrap(err, "failed to map first operand"))
+		return
+	}
+	operand2, err := operandFromMixedValue(cond.RightValue)
+	if err != nil {
+		c.setErr(errors.Wrap(err, "failed to map second operand"))
+		return
+	}
 	c.ins.Append(Instruction{
-		Operation: operationFromEqualityString(cond.Op),
+		Operation: op,
 		Ret:       res,
-		Operand1:  operandFromMixedValue(cond.LeftValue),
-		Operand2:  operandFromMixedValue(cond.RightValue),
+		Operand1:  operand1,
+		Operand2:  operand2,
 	})
 }
 
@@ -134,14 +153,25 @@ func (c *Compiler) evaluateConsequent(cons Consequent) {
 }
 
 func (c *Compiler) evaluateScoreChange(sc ScoreChange) {
+	op, err := operationFromScoreChange(sc)
+	if err != nil {
+		c.setErr(errors.Wrap(err, "failed to map score change operation"))
+		return
+	}
+	operand1 := ScoreOperand{Name: sc.Score.Name}
+	operand2, err := operandFromIntValue(sc.Value)
+	if err != nil {
+		c.setErr(errors.Wrap(err, "failed to map second operand"))
+		return
+	}
 	c.ins.Append(Instruction{
-		Operation: operationFromScoreChange(sc),
-		Operand1:  ScoreOperand{Name: sc.Score.Name},
-		Operand2:  operandFromIntValue(sc.Value),
+		Operation: op,
+		Operand1:  operand1,
+		Operand2:  operand2,
 	})
 }
 
-func operationFromEqualityString(s string) (op Operation) {
+func operationFromEqualityString(s string) (op Operation, err error) {
 	switch s {
 	case "==":
 		op = OperationIsEqual
@@ -160,12 +190,12 @@ func operationFromEqualityString(s string) (op Operation) {
 	case "doesnotcontain":
 		op = OperationDoesNotContain
 	default:
-		panic("unknown operation: " + s)
+		err = fmt.Errorf("unknown operation %s", s)
 	}
 	return
 }
 
-func operandFromMixedValue(mv MixedValue) (op Operand) {
+func operandFromMixedValue(mv MixedValue) (op Operand, err error) {
 	switch {
 	case mv.Var != nil:
 		op = VarOperand{Name: *mv.Var}
@@ -176,24 +206,24 @@ func operandFromMixedValue(mv MixedValue) (op Operand) {
 	case mv.Score != nil:
 		op = ScoreOperand{Name: (*mv.Score).Name}
 	default:
-		panic("unresolvable operand: " + fmt.Sprintf("%+v", mv))
+		err = fmt.Errorf("unresolvable mixed value %+v", mv)
 	}
 	return
 }
 
-func operandFromIntValue(iv IntValue) (op Operand) {
+func operandFromIntValue(iv IntValue) (op Operand, err error) {
 	switch {
 	case iv.Int != nil:
 		op = IntOperand{Value: *iv.Int}
 	case iv.Score != nil:
 		op = ScoreOperand{Name: (*iv.Score).Name}
 	default:
-		panic("unresolvable operand: " + fmt.Sprintf("%+v", iv))
+		err = fmt.Errorf("unresolvable int value %+v", iv)
 	}
 	return
 }
 
-func operationFromScoreChange(sc ScoreChange) (op Operation) {
+func operationFromScoreChange(sc ScoreChange) (op Operation, err error) {
 	switch sc.Operator {
 	case "+=":
 		op = OperationAddScore
@@ -202,7 +232,7 @@ func operationFromScoreChange(sc ScoreChange) (op Operation) {
 	case "=":
 		op = OperationSetScore
 	default:
-		panic("unknown operation: " + sc.Operator)
+		err = fmt.Errorf("unknwon operation %+v", sc)
 	}
 	return
 }
