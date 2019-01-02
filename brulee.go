@@ -14,12 +14,12 @@ func Compile(r io.Reader) (Program, error) {
 	if err != nil {
 		return program, err
 	}
-	comp := internal.NewCompiler()
-	comp.Compile(root)
-	if err := comp.Err(); err != nil {
+	ig := internal.NewInstructionsGenerator()
+	ig.Generate(root)
+	if err := ig.Err(); err != nil {
 		return program, err
 	}
-	program.load(comp.Instructions())
+	program.load(ig.Instructions())
 	return program, nil
 }
 
@@ -36,8 +36,8 @@ type Program struct {
 }
 
 func (p Program) Run(vars map[string]string) (map[string]int, error) {
-	i := internal.NewInterpreter(p.ins, vars)
-	i.Run()
+	i := internal.NewExecutor(p.ins, vars)
+	i.Execute()
 	if err := i.Err(); err != nil {
 		return nil, err
 	}

@@ -6,128 +6,127 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Compiler struct {
-	ins        *InstructionsBuffer
+type InstructionsGenerator struct {
+	buf        *InstructionsBuffer
 	scratchPos uint
 	err        error
 }
 
-func NewCompiler() *Compiler {
-	return &Compiler{
-		ins: &InstructionsBuffer{},
+func NewInstructionsGenerator() *InstructionsGenerator {
+	return &InstructionsGenerator{
+		buf: &InstructionsBuffer{},
 	}
 }
 
-func (c *Compiler) Compile(root Root) {
+func (ig *InstructionsGenerator) Generate(root Root) {
 	for _, s := range root.Statements {
-		c.evaluateStatement(s)
+		ig.evaluateStatement(s)
 	}
-	return
 }
 
-func (c *Compiler) evaluateStatement(s Statement) {
+func (ig *InstructionsGenerator) evaluateStatement(s Statement) {
 	switch {
 	case s.ScoreChange != nil:
-		c.evaluateScoreChange(*s.ScoreChange)
+		ig.evaluateScoreChange(*s.ScoreChange)
 	case s.Rule != nil:
-		c.evaluateRule(*s.Rule)
+		ig.evaluateRule(*s.Rule)
 	default:
-		c.setErr(fmt.Errorf("could not resolve score change or rule from %+v", s))
+		ig.setErr(fmt.Errorf("could not resolve score change or rule from %+v", s))
 	}
 }
 
-func (c *Compiler) evaluateRule(rule Rule) {
-	scratch := c.nextScratchPos()
-	c.evaluateExpression(rule.Expression, scratch)
-	pos := c.ins.Reserve()
-	c.evaluateConsequences(rule.Consequences)
-	c.ins.Replace(pos, Instruction{
+func (ig *InstructionsGenerator) evaluateRule(rule Rule) {
+	scratch := ig.nextScratchPos()
+	ig.evaluateExpression(rule.Expression, scratch)
+	pos := ig.buf.Reserve()
+	ig.evaluateConsequences(rule.Consequences)
+	ig.buf.Replace(pos, Instruction{
 		Operation: OperationJumpIfZero,
 		Operand1:  ScratchOperand{Pos: scratch},
-		Operand2:  InstructionPositionOperand{Pos: c.ins.Head()},
+		Operand2:  InstructionPositionOperand{Pos: ig.buf.Head()},
 	})
-	c.ins.Append(Instruction{
+	ig.buf.Append(Instruction{
 		Operation: OperationNoop,
 	})
 }
 
-func (c *Compiler) evaluateExpression(e Expression, res ScratchPosition) {
+func (ig *InstructionsGenerator) evaluateExpression(e Expression, res ScratchPosition) {
 	if len(e.Or) > 1 {
 		reserved := map[int]ScratchPosition{}
 		for _, or := range e.Or {
-			inner := c.nextScratchPos()
-			c.evaluateOrExpression(or, inner)
-			pos := c.ins.Reserve()
+			inner := ig.nextScratchPos()
+			ig.evaluateOrExpression(or, inner)
+			pos := ig.buf.Reserve()
 			reserved[pos] = inner
 		}
 		for p, pos := range reserved {
-			c.ins.Replace(p, Instruction{
+			ig.buf.Replace(p, Instruction{
 				Operation: OperationJumpIfNotZero,
 				Ret:       res,
 				Operand1:  ScratchOperand{Pos: pos},
-				Operand2:  InstructionPositionOperand{Pos: c.ins.Head()},
+				Operand2:  InstructionPositionOperand{Pos: ig.buf.Head()},
 			})
 		}
 	} else {
-		c.evaluateOrExpression(e.Or[0], res)
+		ig.evaluateOrExpression(e.Or[0], res)
 	}
 }
 
-func (c *Compiler) evaluateOrExpression(or OrExpression, res ScratchPosition) {
+func (ig *InstructionsGenerator) evaluateOrExpression(or OrExpression, res ScratchPosition) {
 	if len(or.And) > 1 {
 		reserved := map[int]ScratchPosition{}
 		for _, coe := range or.And {
-			inner := c.nextScratchPos()
-			c.evaluateConditionOrExpression(coe, inner)
-			pos := c.ins.Reserve()
+			inner := ig.nextScratchPos()
+			ig.evaluateConditionOrExpression(coe, inner)
+			pos := ig.buf.Reserve()
 			reserved[pos] = inner
 		}
 		for p, pos := range reserved {
-			c.ins.Replace(p, Instruction{
+			ig.buf.Replace(p, Instruction{
 				Operation: OperationJumpIfZero,
 				Ret:       res,
 				Operand1:  ScratchOperand{Pos: pos},
-				Operand2:  InstructionPositionOperand{Pos: c.ins.Head()},
+				Operand2:  InstructionPositionOperand{Pos: ig.buf.Head()},
 			})
 		}
-		c.ins.Append(Instruction{
+		ig.buf.Append(Instruction{
 			Operation: OperationNegate,
 			Ret:       res,
 			Operand1:  ScratchOperand{Pos: res},
 		})
 	} else {
-		c.evaluateConditionOrExpression(or.And[0], res)
+		ig.evaluateConditionOrExpression(or.And[0], res)
 	}
 }
 
-func (c *Compiler) evaluateConditionOrExpression(coe ConditionOrExpression, res ScratchPosition) {
+func (ig *InstructionsGenerator) evaluateConditionOrExpression(coe ConditionOrExpression, res ScratchPosition) {
 	switch {
 	case coe.Condition != nil:
-		c.evaluateCondition(*coe.Condition, res)
+		ig.evaluateCondition(*coe.Condition, res)
 	case coe.Expression != nil:
-		c.evaluateExpression(*coe.Expression, res)
+		ig.evaluateExpression(*coe.Expression, res)
 	default:
-		c.setErr(fmt.Errorf("could not resolve condition or expression from %+v", coe))
+		ig.setErr(fmt.Errorf("could not resolve condition or expression from %+v", coe))
 	}
 }
 
-func (c *Compiler) evaluateCondition(cond Condition, res ScratchPosition) {
+func (ig *InstructionsGenerator) evaluateCondition(cond Condition, res ScratchPosition) {
 	op, err := operationFromEqualityString(cond.Op)
 	if err != nil {
-		c.setErr(errors.Wrap(err, "failed to map condition operation"))
+		ig.setErr(errors.Wrap(err, "failed to map condition operation"))
 		return
 	}
 	operand1, err := operandFromMixedValue(cond.LeftValue)
 	if err != nil {
-		c.setErr(errors.Wrap(err, "failed to map first operand"))
+		ig.setErr(errors.Wrap(err, "failed to map first operand"))
 		return
 	}
 	operand2, err := operandFromMixedValue(cond.RightValue)
 	if err != nil {
-		c.setErr(errors.Wrap(err, "failed to map second operand"))
+		ig.setErr(errors.Wrap(err, "failed to map second operand"))
 		return
 	}
-	c.ins.Append(Instruction{
+	ig.buf.Append(Instruction{
 		Operation: op,
 		Ret:       res,
 		Operand1:  operand1,
@@ -135,25 +134,25 @@ func (c *Compiler) evaluateCondition(cond Condition, res ScratchPosition) {
 	})
 }
 
-func (c *Compiler) evaluateConsequences(cons Consequences) {
+func (ig *InstructionsGenerator) evaluateConsequences(cons Consequences) {
 	for _, s := range cons.Consequences {
-		c.evaluateStatement(s)
+		ig.evaluateStatement(s)
 	}
 }
 
-func (c *Compiler) evaluateScoreChange(sc ScoreChange) {
+func (ig *InstructionsGenerator) evaluateScoreChange(sc ScoreChange) {
 	op, err := operationFromScoreChange(sc)
 	if err != nil {
-		c.setErr(errors.Wrap(err, "failed to map score change operation"))
+		ig.setErr(errors.Wrap(err, "failed to map score change operation"))
 		return
 	}
 	operand1 := ScoreOperand{Name: sc.Score.Name}
 	operand2, err := operandFromIntValue(sc.Value)
 	if err != nil {
-		c.setErr(errors.Wrap(err, "failed to map second operand"))
+		ig.setErr(errors.Wrap(err, "failed to map second operand"))
 		return
 	}
-	c.ins.Append(Instruction{
+	ig.buf.Append(Instruction{
 		Operation: op,
 		Operand1:  operand1,
 		Operand2:  operand2,
@@ -226,21 +225,21 @@ func operationFromScoreChange(sc ScoreChange) (op Operation, err error) {
 	return
 }
 
-func (c *Compiler) nextScratchPos() ScratchPosition {
-	c.scratchPos++
-	return ScratchPosition(c.scratchPos)
+func (ig *InstructionsGenerator) nextScratchPos() ScratchPosition {
+	ig.scratchPos++
+	return ScratchPosition(ig.scratchPos)
 }
 
-func (c *Compiler) Instructions() []Instruction {
-	return c.ins.Instructions()
+func (ig *InstructionsGenerator) Instructions() []Instruction {
+	return ig.buf.Instructions()
 }
 
-func (c *Compiler) Err() error {
-	return c.err
+func (ig *InstructionsGenerator) Err() error {
+	return ig.err
 }
 
-func (c *Compiler) setErr(err error) {
-	if c.err == nil {
-		c.err = err
+func (ig *InstructionsGenerator) setErr(err error) {
+	if ig.err == nil {
+		ig.err = err
 	}
 }

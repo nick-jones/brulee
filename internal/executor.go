@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-type Interpreter struct {
+type Executor struct {
 	ins     []Instruction
 	vars    map[string]string
 	scratch map[ScratchPosition]bool
@@ -13,8 +13,8 @@ type Interpreter struct {
 	err     error
 }
 
-func NewInterpreter(ins []Instruction, vars map[string]string) *Interpreter {
-	return &Interpreter{
+func NewExecutor(ins []Instruction, vars map[string]string) *Executor {
+	return &Executor{
 		ins:     ins,
 		vars:    vars,
 		scratch: map[ScratchPosition]bool{},
@@ -22,7 +22,7 @@ func NewInterpreter(ins []Instruction, vars map[string]string) *Interpreter {
 	}
 }
 
-func (i *Interpreter) Run() {
+func (i *Executor) Execute() {
 	pos := 0
 	for pos < len(i.ins) {
 		ins := i.ins[pos]
@@ -84,21 +84,21 @@ func (i *Interpreter) Run() {
 	}
 }
 
-func (i *Interpreter) Scores() map[string]int {
+func (i *Executor) Scores() map[string]int {
 	return i.scores
 }
 
-func (i *Interpreter) Err() error {
+func (i *Executor) Err() error {
 	return i.err
 }
 
-func (i *Interpreter) setErr(err error) {
+func (i *Executor) setErr(err error) {
 	if i.err == nil {
 		i.err = err
 	}
 }
 
-func (i *Interpreter) operandsEqual(op1, op2 Operand) bool {
+func (i *Executor) operandsEqual(op1, op2 Operand) bool {
 	switch o := op1.(type) {
 	case IntOperand:
 		return o.Value == i.intFromOperand(op2)
@@ -114,7 +114,7 @@ func (i *Interpreter) operandsEqual(op1, op2 Operand) bool {
 	return false
 }
 
-func (i *Interpreter) intFromOperand(op Operand) (v int) {
+func (i *Executor) intFromOperand(op Operand) (v int) {
 	switch o := op.(type) {
 	case IntOperand:
 		v = o.Value
@@ -126,7 +126,7 @@ func (i *Interpreter) intFromOperand(op Operand) (v int) {
 	return
 }
 
-func (i *Interpreter) stringFromOperand(op Operand) (s string) {
+func (i *Executor) stringFromOperand(op Operand) (s string) {
 	switch o := op.(type) {
 	case StringOperand:
 		s = o.Value
@@ -138,7 +138,7 @@ func (i *Interpreter) stringFromOperand(op Operand) (s string) {
 	return
 }
 
-func (i *Interpreter) instructionPositionFromOperand(op Operand) (p int) {
+func (i *Executor) instructionPositionFromOperand(op Operand) (p int) {
 	switch o := op.(type) {
 	case InstructionPositionOperand:
 		p = o.Pos
@@ -148,7 +148,7 @@ func (i *Interpreter) instructionPositionFromOperand(op Operand) (p int) {
 	return
 }
 
-func (i *Interpreter) scratchVarFromOperand(op Operand) (b bool) {
+func (i *Executor) scratchVarFromOperand(op Operand) (b bool) {
 	switch o := op.(type) {
 	case ScratchOperand:
 		b = i.scratch[o.Pos]
@@ -158,7 +158,7 @@ func (i *Interpreter) scratchVarFromOperand(op Operand) (b bool) {
 	return
 }
 
-func (i *Interpreter) scoreNameFromOperand(op Operand) (s string) {
+func (i *Executor) scoreNameFromOperand(op Operand) (s string) {
 	switch o := op.(type) {
 	case ScoreOperand:
 		s = o.Name
