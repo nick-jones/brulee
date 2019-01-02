@@ -9,13 +9,17 @@ import (
 )
 
 func Compile(r io.Reader) (Program, error) {
+	program := Program{}
 	root, err := internal.Parse(r)
 	if err != nil {
-		return Program{}, err
+		return program, err
 	}
 	comp := internal.NewCompiler()
 	comp.Compile(root)
-	program := Program{ins: comp.Instructions()}
+	if err := comp.Err(); err != nil {
+		return program, err
+	}
+	program.load(comp.Instructions())
 	return program, nil
 }
 
@@ -43,4 +47,8 @@ func (p Program) Dump(w io.Writer) {
 	}
 
 	table.Render()
+}
+
+func (p *Program) load(ins []internal.Instruction) {
+	p.ins = ins
 }

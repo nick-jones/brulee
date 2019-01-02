@@ -5,6 +5,7 @@ import "fmt"
 type Compiler struct {
 	ins        *InstructionsBuffer
 	scratchPos uint
+	err        error
 }
 
 func NewCompiler() *Compiler {
@@ -27,7 +28,7 @@ func (c *Compiler) evaluateStatement(s Statement) {
 	case s.Rule != nil:
 		c.evaluateRule(*s.Rule)
 	default:
-		panic("could not resolve score change or rule")
+		c.setErr(fmt.Errorf("could not resolve score change or rule from %+v", s))
 	}
 }
 
@@ -102,7 +103,7 @@ func (c *Compiler) evaluateConditionOrExpression(coe ConditionOrExpression, res 
 	case coe.Expression != nil:
 		c.evaluateExpression(*coe.Expression, res)
 	default:
-		panic("could not resolve condition or expression")
+		c.setErr(fmt.Errorf("could not resolve condition or expression from %+v", coe))
 	}
 }
 
@@ -128,7 +129,7 @@ func (c *Compiler) evaluateConsequent(cons Consequent) {
 	case cons.SubRule != nil:
 		c.evaluateRule(*cons.SubRule)
 	default:
-		panic("could not resolve score change or sub rule")
+		c.setErr(fmt.Errorf("could not resolve score change or sub rule from %+v", cons))
 	}
 }
 
@@ -213,4 +214,14 @@ func (c *Compiler) nextScratchPos() ScratchPosition {
 
 func (c *Compiler) Instructions() []Instruction {
 	return c.ins.Instructions()
+}
+
+func (c *Compiler) Err() error {
+	return c.err
+}
+
+func (c *Compiler) setErr(err error) {
+	if c.err == nil {
+		c.err = err
+	}
 }
