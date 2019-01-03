@@ -2,8 +2,11 @@ package brulee
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
+	"testing"
+	"time"
 
 	"github.com/DATA-DOG/godog"
 	"github.com/DATA-DOG/godog/gherkin"
@@ -69,4 +72,26 @@ func FeatureContext(s *godog.Suite) {
 	s.Step(`^the program is run$`, theProgramIsRun)
 	s.Step(`^the score output is:$`, theScoreOutputIs)
 	s.Step(`^the score output is empty$`, theScoreOutputIsEmpty)
+}
+
+func TestMain(m *testing.M) {
+	format := "progress"
+	for _, arg := range os.Args[1:] {
+		if arg == "-test.v=true" {
+			format = "pretty"
+			break
+		}
+	}
+	status := godog.RunWithOptions("godog", func(s *godog.Suite) {
+		FeatureContext(s)
+	}, godog.Options{
+		Format:    format,
+		Paths:     []string{"features"},
+		Randomize: time.Now().UTC().UnixNano(),
+	})
+
+	if st := m.Run(); st > status {
+		status = st
+	}
+	os.Exit(status)
 }
