@@ -378,3 +378,123 @@ Feature:
     Then the score output is:
       | Name | Score |
       | x    | 1     |
+
+  Scenario: String in list
+    Given the program:
+    """
+    when
+        "y" in ["x", "y", "z"]
+    then
+        score(x) = 1
+    done
+    """
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |
+
+  Scenario: Var in list
+    Given the program:
+    """
+    when
+        var(a) in ["x", "y", "z"]
+    then
+        score(x) = 1
+    done
+    """
+    And variables:
+      | Name | Value |
+      | a    | x     |
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |
+
+  Scenario: String in list containing mixed values
+    Given the program:
+    """
+    when
+        "y" in ["x", var(a), "z"]
+    then
+        score(x) = 1
+    done
+    """
+    And variables:
+      | Name | Value |
+      | a    | y     |
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |
+
+  Scenario: String in list failure
+    Given the program:
+    """
+    when
+        "a" in ["x", "y", "z"]
+    then
+        score(x) = 1
+    done
+    """
+    When the program is run
+    Then the score output is empty
+
+  Scenario: String not in list
+    Given the program:
+    """
+    when
+        "a" not in ["x", "y", "z"]
+    then
+        score(x) = 1
+    done
+    """
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |
+
+  Scenario: Var not in list
+    Given the program:
+    """
+    when
+        var(a) not in ["x", "y", "z"]
+    then
+        score(x) = 1
+    done
+    """
+    And variables:
+      | Name | Value |
+      | a    | a     |
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |
+
+  Scenario: String not in list containing mixed values
+    Given the program:
+    """
+    when
+        "y" not in ["x", var(a), "z"]
+    then
+        score(x) = 1
+    done
+    """
+    And variables:
+      | Name | Value |
+      | a    | a     |
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |
+
+  Scenario: String not in list failure
+    Given the program:
+    """
+    when
+        "z" not in ["x", "y", "z"]
+    then
+        score(x) = 1
+    done
+    """
+    When the program is run
+    Then the score output is empty

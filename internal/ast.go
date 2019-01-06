@@ -28,9 +28,20 @@ type ConditionOrExpression struct {
 }
 
 type Condition struct {
+	ScalarCondition *ScalarCondition `@@`
+	ListCondition   *ListCondition   `| @@`
+}
+
+type ScalarCondition struct {
 	LeftValue  MixedValue `@@`
 	Op         string     `@( "<" { "=" } | ">" { "=" } | "=" "=" | "!" "=" | "contains" | "matches" | "does" "not" ( "match" | "contain" ) )`
 	RightValue MixedValue `@@`
+}
+
+type ListCondition struct {
+	LeftValue   MixedValue   `@@`
+	Op          string       `@( { "not" } "in" )`
+	RightValues []MixedValue `"[" @@ { "," @@ } "]"`
 }
 
 type MixedValue struct {

@@ -112,7 +112,18 @@ func (ig *InstructionsGenerator) evaluateConditionOrExpression(coe ConditionOrEx
 }
 
 func (ig *InstructionsGenerator) evaluateCondition(cond Condition, res ScratchPosition) {
-	op, err := operationFromEqualityString(cond.Op)
+	switch {
+	case cond.ScalarCondition != nil:
+		ig.evaluateScalarCondition(*cond.ScalarCondition, res)
+	case cond.ListCondition != nil:
+		ig.evaluateListCondition(*cond.ListCondition, res)
+	default:
+		ig.setErr(fmt.Errorf("could not resolve scalar or list condition from %+v", cond))
+	}
+}
+
+func (ig *InstructionsGenerator) evaluateScalarCondition(cond ScalarCondition, res ScratchPosition) {
+	op, err := operationFromEqualityOperator(cond.Op)
 	if err != nil {
 		ig.setErr(errors.Wrap(err, "failed to map condition operation"))
 		return
@@ -133,6 +144,46 @@ func (ig *InstructionsGenerator) evaluateCondition(cond Condition, res ScratchPo
 		Operand1:  operand1,
 		Operand2:  operand2,
 	})
+}
+
+func (ig *InstructionsGenerator) evaluateListCondition(cond ListCondition, res ScratchPosition) {
+	operand1, err := operandFromMixedValue(cond.LeftValue)
+	if err != nil {
+		ig.setErr(errors.Wrap(err, "failed to first operand"))
+		return
+	}
+	reserved := map[int]ScratchPosition{}
+	for _, mv := range cond.RightValues {
+		operand2, err := operandFromMixedValue(mv)
+		if err != nil {
+			ig.setErr(errors.Wrap(err, "failed to list value operand"))
+			return
+		}
+		inner := ig.nextScratchPos()
+		ig.buf.Append(Instruction{
+			Operation: OperationIsEqual,
+			Ret:       inner,
+			Operand1:  operand1,
+			Operand2:  operand2,
+		})
+		pos := ig.buf.Reserve()
+		reserved[pos] = inner
+	}
+	for p, pos := range reserved {
+		ig.buf.Replace(p, Instruction{
+			Operation: OperationJumpIfNotZero,
+			Ret:       res,
+			Operand1:  ScratchOperand{Pos: pos},
+			Operand2:  InstructionPositionOperand{Pos: ig.buf.Head()},
+		})
+	}
+	if cond.Op == "notin" {
+		ig.buf.Append(Instruction{
+			Operation: OperationNegate,
+			Ret:       res,
+			Operand1:  ScratchOperand{Pos: res},
+		})
+	}
 }
 
 func (ig *InstructionsGenerator) evaluateConsequences(cons Consequences) {
@@ -160,7 +211,7 @@ func (ig *InstructionsGenerator) evaluateScoreChange(sc ScoreChange) {
 	})
 }
 
-func operationFromEqualityString(s string) (op Operation, err error) {
+func operationFromEqualityOperator(s string) (op Operation, err error) {
 	switch s {
 	case "==":
 		op = OperationIsEqual

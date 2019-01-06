@@ -26,6 +26,7 @@ var (
 		participle.Lexer(lexr),
 		participle.Unquote("String"),
 		participle.Elide("Whitespace", "Comment"),
+		participle.UseLookahead(5),
 		removeRegexpSlashes("Regexp"),
 	)
 )
