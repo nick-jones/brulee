@@ -301,10 +301,10 @@ Feature:
     Given the program:
     """
     when
-		"xyz" matches /y/
-	then
-		score(x) = 1
-	done
+        "xyz" matches /y/
+    then
+        score(x) = 1
+    done
     """
     When the program is run
     Then the score output is:
@@ -315,10 +315,10 @@ Feature:
     Given the program:
     """
     when
-		"." matches /^\.$/
-	then
-		score(x) = 1
-	done
+        "." matches /^\.$/
+    then
+        score(x) = 1
+    done
     """
     When the program is run
     Then the score output is:
@@ -329,10 +329,10 @@ Feature:
     Given the program:
     """
     when
-		"/" matches /^\/$/
-	then
-		score(x) = 1
-	done
+        "/" matches /^\/$/
+    then
+        score(x) = 1
+    done
     """
     When the program is run
     Then the score output is:
@@ -343,10 +343,10 @@ Feature:
     Given the program:
     """
     when
-		"1" matches /^\d$/
-	then
-		score(x) = 1
-	done
+        "1" matches /^\d$/
+    then
+        score(x) = 1
+    done
     """
     When the program is run
     Then the score output is:
@@ -357,10 +357,10 @@ Feature:
     Given the program:
     """
     when
-		"xyz" matches /a/
-	then
-		score(x) = 1
-	done
+        "xyz" matches /a/
+    then
+        score(x) = 1
+    done
     """
     When the program is run
     Then the score output is empty
@@ -369,10 +369,10 @@ Feature:
     Given the program:
     """
     when
-		"xyz" does not match /a/
-	then
-		score(x) = 1
-	done
+        "xyz" does not match /a/
+    then
+        score(x) = 1
+    done
     """
     When the program is run
     Then the score output is:
