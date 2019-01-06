@@ -8,14 +8,15 @@ import (
 )
 
 type InstructionsGenerator struct {
-	buf        *InstructionsBuffer
-	scratchPos uint
-	err        error
+	buf         *InstructionsBuffer
+	scratchUsed map[ScratchPosition]bool
+	err         error
 }
 
 func NewInstructionsGenerator() *InstructionsGenerator {
 	return &InstructionsGenerator{
-		buf: &InstructionsBuffer{},
+		buf:         &InstructionsBuffer{},
+		scratchUsed: map[ScratchPosition]bool{},
 	}
 }
 
@@ -40,7 +41,7 @@ func (ig *InstructionsGenerator) evaluateStatement(s Statement) {
 }
 
 func (ig *InstructionsGenerator) evaluateRule(rule Rule) {
-	scratch := ig.nextScratchPos()
+	scratch := ig.allocateScratchPosition()
 	ig.evaluateExpression(rule.Expression, scratch)
 	pos := ig.buf.Reserve()
 	ig.evaluateConsequences(rule.Consequences)
@@ -49,22 +50,24 @@ func (ig *InstructionsGenerator) evaluateRule(rule Rule) {
 		Operand1:  ScratchOperand{Pos: scratch},
 		Operand2:  InstructionPositionOperand{Pos: ig.buf.Head()},
 	})
+	ig.freeScratchPosition(scratch)
 }
 
 func (ig *InstructionsGenerator) evaluateExpression(e Expression, res ScratchPosition) {
 	if len(e.Or) > 1 {
 		reserved := map[int]ScratchPosition{}
 		for _, or := range e.Or {
-			inner := ig.nextScratchPos()
+			inner := ig.allocateScratchPosition()
 			ig.evaluateOrExpression(or, inner)
 			pos := ig.buf.Reserve()
 			reserved[pos] = inner
+			ig.freeScratchPosition(inner)
 		}
-		for p, pos := range reserved {
+		for p, scratch := range reserved {
 			ig.buf.Replace(p, Instruction{
 				Operation: OperationJumpIfNotZero,
 				Ret:       res,
-				Operand1:  ScratchOperand{Pos: pos},
+				Operand1:  ScratchOperand{Pos: scratch},
 				Operand2:  InstructionPositionOperand{Pos: ig.buf.Head()},
 			})
 		}
@@ -77,16 +80,17 @@ func (ig *InstructionsGenerator) evaluateOrExpression(or OrExpression, res Scrat
 	if len(or.And) > 1 {
 		reserved := map[int]ScratchPosition{}
 		for _, coe := range or.And {
-			inner := ig.nextScratchPos()
+			inner := ig.allocateScratchPosition()
 			ig.evaluateConditionOrExpression(coe, inner)
 			pos := ig.buf.Reserve()
 			reserved[pos] = inner
+			ig.freeScratchPosition(inner)
 		}
-		for p, pos := range reserved {
+		for p, scratch := range reserved {
 			ig.buf.Replace(p, Instruction{
 				Operation: OperationJumpIfZero,
 				Ret:       res,
-				Operand1:  ScratchOperand{Pos: pos},
+				Operand1:  ScratchOperand{Pos: scratch},
 				Operand2:  InstructionPositionOperand{Pos: ig.buf.Head()},
 			})
 		}
@@ -159,7 +163,7 @@ func (ig *InstructionsGenerator) evaluateListCondition(cond ListCondition, res S
 			ig.setErr(errors.Wrap(err, "failed to list value operand"))
 			return
 		}
-		inner := ig.nextScratchPos()
+		inner := ig.allocateScratchPosition()
 		ig.buf.Append(Instruction{
 			Operation: OperationIsEqual,
 			Ret:       inner,
@@ -168,12 +172,13 @@ func (ig *InstructionsGenerator) evaluateListCondition(cond ListCondition, res S
 		})
 		pos := ig.buf.Reserve()
 		reserved[pos] = inner
+		ig.freeScratchPosition(inner)
 	}
-	for p, pos := range reserved {
+	for p, scratch := range reserved {
 		ig.buf.Replace(p, Instruction{
 			Operation: OperationJumpIfNotZero,
 			Ret:       res,
-			Operand1:  ScratchOperand{Pos: pos},
+			Operand1:  ScratchOperand{Pos: scratch},
 			Operand2:  InstructionPositionOperand{Pos: ig.buf.Head()},
 		})
 	}
@@ -291,9 +296,18 @@ func operationFromScoreChange(sc ScoreChange) (op Operation, err error) {
 	return
 }
 
-func (ig *InstructionsGenerator) nextScratchPos() ScratchPosition {
-	ig.scratchPos++
-	return ScratchPosition(ig.scratchPos)
+func (ig *InstructionsGenerator) allocateScratchPosition() (sp ScratchPosition) {
+	for {
+		sp++
+		if !ig.scratchUsed[sp] {
+			ig.scratchUsed[sp] = true
+			return
+		}
+	}
+}
+
+func (ig *InstructionsGenerator) freeScratchPosition(sp ScratchPosition) {
+	ig.scratchUsed[sp] = false
 }
 
 func (ig *InstructionsGenerator) Instructions() []Instruction {
