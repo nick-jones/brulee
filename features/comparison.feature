@@ -271,7 +271,7 @@ Feature:
       | Name | Score |
       | x    | 1     |
 
-  Scenario: Simple string to string not equals but equal
+  Scenario: Simple string to string contains failure
     Given the program:
     """
     when
@@ -282,3 +282,99 @@ Feature:
     """
     When the program is run
     Then the score output is empty
+
+  Scenario: Simple string to string does not contain
+    Given the program:
+    """
+    when
+      "xyz" does not contain "a"
+    then
+      score(x) = 1
+    done
+    """
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |
+
+  Scenario: Simple string regexp match
+    Given the program:
+    """
+    when
+		"xyz" matches /y/
+	then
+		score(x) = 1
+	done
+    """
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |
+
+  Scenario: String regexp match with dot escaping
+    Given the program:
+    """
+    when
+		"." matches /^\.$/
+	then
+		score(x) = 1
+	done
+    """
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |
+
+  Scenario: String regexp match with slash escaping
+    Given the program:
+    """
+    when
+		"/" matches /^\/$/
+	then
+		score(x) = 1
+	done
+    """
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |
+
+  Scenario: String regexp match with character class
+    Given the program:
+    """
+    when
+		"1" matches /^\d$/
+	then
+		score(x) = 1
+	done
+    """
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |
+
+  Scenario: Simple string regexp match failure
+    Given the program:
+    """
+    when
+		"xyz" matches /a/
+	then
+		score(x) = 1
+	done
+    """
+    When the program is run
+    Then the score output is empty
+
+  Scenario: Simple string regexp does not match
+    Given the program:
+    """
+    when
+		"xyz" does not match /a/
+	then
+		score(x) = 1
+	done
+    """
+    When the program is run
+    Then the score output is:
+      | Name | Score |
+      | x    | 1     |

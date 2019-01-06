@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -167,6 +168,46 @@ func TestExecutor_Execute(t *testing.T) {
 			name: "contains check, fail",
 			ins: []Instruction{
 				{Operation: OperationContains, Ret: 1, Operand1: StringOperand{Value: "abc"}, Operand2: StringOperand{Value: "d"}},
+				{Operation: OperationJumpIfZero, Operand1: ScratchOperand{Pos: 1}, Operand2: InstructionPositionOperand{Pos: 3}},
+				{Operation: OperationSetScore, Operand1: ScoreOperand{Name: "x"}, Operand2: IntOperand{Value: 1}},
+				{Operation: OperationNoop},
+			},
+			expected: map[string]int{},
+		},
+		{
+			name: "matches check, pass",
+			ins: []Instruction{
+				{Operation: OperationMatches, Ret: 1, Operand1: StringOperand{Value: "abc"}, Operand2: RegexpOperand{Value: regexp.MustCompile("b")}},
+				{Operation: OperationJumpIfZero, Operand1: ScratchOperand{Pos: 1}, Operand2: InstructionPositionOperand{Pos: 3}},
+				{Operation: OperationSetScore, Operand1: ScoreOperand{Name: "x"}, Operand2: IntOperand{Value: 1}},
+				{Operation: OperationNoop},
+			},
+			expected: map[string]int{"x": 1},
+		},
+		{
+			name: "matches check, fail",
+			ins: []Instruction{
+				{Operation: OperationMatches, Ret: 1, Operand1: StringOperand{Value: "abc"}, Operand2: RegexpOperand{Value: regexp.MustCompile("d")}},
+				{Operation: OperationJumpIfZero, Operand1: ScratchOperand{Pos: 1}, Operand2: InstructionPositionOperand{Pos: 3}},
+				{Operation: OperationSetScore, Operand1: ScoreOperand{Name: "x"}, Operand2: IntOperand{Value: 1}},
+				{Operation: OperationNoop},
+			},
+			expected: map[string]int{},
+		},
+		{
+			name: "does not match check, pass",
+			ins: []Instruction{
+				{Operation: OperationDoesNotMatch, Ret: 1, Operand1: StringOperand{Value: "abc"}, Operand2: RegexpOperand{Value: regexp.MustCompile("d")}},
+				{Operation: OperationJumpIfZero, Operand1: ScratchOperand{Pos: 1}, Operand2: InstructionPositionOperand{Pos: 3}},
+				{Operation: OperationSetScore, Operand1: ScoreOperand{Name: "x"}, Operand2: IntOperand{Value: 1}},
+				{Operation: OperationNoop},
+			},
+			expected: map[string]int{"x": 1},
+		},
+		{
+			name: "does not match check, fail",
+			ins: []Instruction{
+				{Operation: OperationDoesNotMatch, Ret: 1, Operand1: StringOperand{Value: "abc"}, Operand2: RegexpOperand{Value: regexp.MustCompile("b")}},
 				{Operation: OperationJumpIfZero, Operand1: ScratchOperand{Pos: 1}, Operand2: InstructionPositionOperand{Pos: 3}},
 				{Operation: OperationSetScore, Operand1: ScoreOperand{Name: "x"}, Operand2: IntOperand{Value: 1}},
 				{Operation: OperationNoop},

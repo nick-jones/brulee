@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/pkg/errors"
 )
@@ -177,6 +178,10 @@ func operationFromEqualityString(s string) (op Operation, err error) {
 		op = OperationContains
 	case "doesnotcontain":
 		op = OperationDoesNotContain
+	case "matches":
+		op = OperationMatches
+	case "doesnotmatch":
+		op = OperationDoesNotMatch
 	default:
 		err = fmt.Errorf("unknown operation %s", s)
 	}
@@ -193,10 +198,20 @@ func operandFromMixedValue(mv MixedValue) (op Operand, err error) {
 		op = IntOperand{Value: *mv.Int}
 	case mv.Score != nil:
 		op = ScoreOperand{Name: (*mv.Score).Name}
+	case mv.Regexp != nil:
+		op, err = buildRegexpOperand(*mv.Regexp)
 	default:
 		err = fmt.Errorf("unresolvable mixed value %+v", mv)
 	}
 	return
+}
+
+func buildRegexpOperand(s string) (RegexpOperand, error) {
+	rg, err := regexp.Compile(s)
+	if err != nil {
+		return RegexpOperand{}, errors.Wrap(err, "regex compile failed")
+	}
+	return RegexpOperand{Value: rg}, nil
 }
 
 func operandFromIntValue(iv IntValue) (op Operand, err error) {

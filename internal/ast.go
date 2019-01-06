@@ -29,7 +29,7 @@ type ConditionOrExpression struct {
 
 type Condition struct {
 	LeftValue  MixedValue `@@`
-	Op         string     `@( "<" { "=" } | ">" { "=" } | "=" "=" | "!" "=" | "does" "not" "contain" | "contains" | "does" "not" "match" | "matches" )`
+	Op         string     `@( "<" { "=" } | ">" { "=" } | "=" "=" | "!" "=" | "contains" | "matches" | "does" "not" ( "match" | "contain" ) )`
 	RightValue MixedValue `@@`
 }
 
@@ -38,6 +38,7 @@ type MixedValue struct {
 	String *string `| @String`
 	Int    *int    `| @Int`
 	Score  *Score  `| @@`
+	Regexp *string `| @Regexp`
 }
 
 type Consequences struct {

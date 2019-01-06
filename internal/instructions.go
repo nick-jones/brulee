@@ -1,6 +1,9 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+	"regexp"
+)
 
 type Operation int8
 
@@ -14,6 +17,8 @@ const (
 	OperationIsLessThanOrEqual
 	OperationContains
 	OperationDoesNotContain
+	OperationMatches
+	OperationDoesNotMatch
 	OperationJumpIfZero
 	OperationJumpIfNotZero
 	OperationAddScore
@@ -32,6 +37,8 @@ var operationToStringMap = map[Operation]string{
 	OperationIsLessThanOrEqual:    "IS_LESS_THAN_OR_EQUAL",
 	OperationContains:             "CONTAINS",
 	OperationDoesNotContain:       "DOES_NOT_CONTAIN",
+	OperationMatches:              "MATCHES",
+	OperationDoesNotMatch:         "DOES_NOT_MATCH",
 	OperationJumpIfZero:           "JUMP_IF_ZERO",
 	OperationJumpIfNotZero:        "JUMP_IF_NOT_ZERO",
 	OperationAddScore:             "ADD_SCORE",
@@ -46,6 +53,14 @@ func (o Operation) String() string {
 
 type Operand interface {
 	String() string
+}
+
+type RegexpOperand struct {
+	Value *regexp.Regexp
+}
+
+func (ro RegexpOperand) String() string {
+	return fmt.Sprintf("regexp(/%s/)", ro.Value)
 }
 
 type VarOperand struct {

@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -43,6 +44,10 @@ func (i *Executor) Execute() {
 			i.scratch[ins.Ret] = strings.Contains(i.stringFromOperand(ins.Operand1), i.stringFromOperand(ins.Operand2))
 		case OperationDoesNotContain:
 			i.scratch[ins.Ret] = !strings.Contains(i.stringFromOperand(ins.Operand1), i.stringFromOperand(ins.Operand2))
+		case OperationMatches:
+			i.scratch[ins.Ret] = i.regexpFromOperand(ins.Operand2).MatchString(i.stringFromOperand(ins.Operand1))
+		case OperationDoesNotMatch:
+			i.scratch[ins.Ret] = !i.regexpFromOperand(ins.Operand2).MatchString(i.stringFromOperand(ins.Operand1))
 		case OperationJumpIfZero:
 			sv := i.scratchVarFromOperand(ins.Operand1)
 			if !sv {
@@ -134,6 +139,16 @@ func (i *Executor) stringFromOperand(op Operand) (s string) {
 		s = i.vars[o.Name]
 	default:
 		i.setErr(fmt.Errorf("could not coerce operand of type %T into string", op))
+	}
+	return
+}
+
+func (i *Executor) regexpFromOperand(op Operand) (r *regexp.Regexp) {
+	switch o := op.(type) {
+	case RegexpOperand:
+		r = o.Value
+	default:
+		i.setErr(fmt.Errorf("could not coerce operand of type %T into Regexp", op))
 	}
 	return
 }
