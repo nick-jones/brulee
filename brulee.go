@@ -6,18 +6,19 @@ import (
 
 	"github.com/nick-jones/brulee/internal"
 	"github.com/olekukonko/tablewriter"
+	"github.com/pkg/errors"
 )
 
 func Compile(r io.Reader) (Program, error) {
 	program := Program{}
 	root, err := internal.Parse(r)
 	if err != nil {
-		return program, err
+		return program, errors.Wrap(err, "parse failure")
 	}
 	ig := internal.NewInstructionsGenerator()
 	ig.Generate(root)
 	if err := ig.Err(); err != nil {
-		return program, err
+		return program, errors.Wrap(err, "instructions generation failure")
 	}
 	program.load(ig.Instructions())
 	return program, nil
