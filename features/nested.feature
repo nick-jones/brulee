@@ -1,7 +1,7 @@
 Feature:
 
-  Scenario: 2 levels
-    Given the program:
+	Scenario: 2 levels
+		Given the program:
     """
     when
       "x" == "x"
@@ -13,13 +13,13 @@ Feature:
       done
     done
     """
-    When the program is run
-    Then the score output is:
-      | Name | Score |
-      | x    | 1     |
+		When the program is run
+		Then the score output is:
+			| Name | Score |
+			| x    | 1     |
 
-  Scenario: 2 levels, first condition failing
-    Given the program:
+	Scenario: 2 levels, first condition failing
+		Given the program:
     """
     when
       "x" == "y"
@@ -31,11 +31,11 @@ Feature:
       done
     done
     """
-    When the program is run
-    Then the score output is empty
+		When the program is run
+		Then the score output is empty
 
-  Scenario: 2 levels, second condition failing
-    Given the program:
+	Scenario: 2 levels, second condition failing
+		Given the program:
     """
     when
       "x" == "x"
@@ -47,11 +47,11 @@ Feature:
       done
     done
     """
-    When the program is run
-    Then the score output is empty
+		When the program is run
+		Then the score output is empty
 
-  Scenario: 3 levels
-    Given the program:
+	Scenario: 3 levels
+		Given the program:
     """
     when
       "x" == "x"
@@ -67,7 +67,7 @@ Feature:
       done
     done
     """
-    When the program is run
-    Then the score output is:
-      | Name | Score |
-      | x    | 1     |
+		When the program is run
+		Then the score output is:
+			| Name | Score |
+			| x    | 1     |
