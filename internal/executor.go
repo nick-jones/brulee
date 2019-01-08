@@ -50,16 +50,16 @@ func (i *Executor) Execute() {
 			i.scratch[ins.Ret] = !i.regexpFromOperand(ins.Operand2).MatchString(i.stringFromOperand(ins.Operand1))
 		case OperationJumpIfZero:
 			sv := i.scratchVarFromOperand(ins.Operand1)
+			i.scratch[ins.Ret] = !sv
 			if !sv {
 				pos = i.instructionPositionFromOperand(ins.Operand2)
-				i.scratch[ins.Ret] = true
 				continue
 			}
 		case OperationJumpIfNotZero:
 			sv := i.scratchVarFromOperand(ins.Operand1)
+			i.scratch[ins.Ret] = sv
 			if sv {
 				pos = i.instructionPositionFromOperand(ins.Operand2)
-				i.scratch[ins.Ret] = true
 				continue
 			}
 		case OperationAddScore:
