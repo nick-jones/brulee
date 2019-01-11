@@ -234,6 +234,15 @@ func TestExecutor_Execute(t *testing.T) {
 			},
 			expected: map[string]int{"x": 1},
 		},
+		{
+			name: "exit",
+			ins: []Instruction{
+				{Operation: OperationSetScore, Operand1: ScoreOperand{Name: "x"}, Operand2: IntOperand{Value: 1}},
+				{Operation: OperationExit},
+				{Operation: OperationAddScore, Operand1: ScoreOperand{Name: "x"}, Operand2: IntOperand{Value: 1}},
+			},
+			expected: map[string]int{"x": 1},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(tt *testing.T) {

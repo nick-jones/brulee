@@ -35,6 +35,8 @@ func (ig *InstructionsGenerator) evaluateStatement(s Statement) {
 		ig.evaluateScoreChange(*s.ScoreChange)
 	case s.Rule != nil:
 		ig.evaluateRule(*s.Rule)
+	case s.Exit:
+		ig.buf.Append(Instruction{Operation: OperationExit})
 	default:
 		ig.setErr(fmt.Errorf("could not resolve score change or rule from %+v", s))
 	}

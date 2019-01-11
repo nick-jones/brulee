@@ -25,6 +25,7 @@ func NewExecutor(ins []Instruction, vars map[string]string) *Executor {
 
 func (i *Executor) Execute() {
 	pos := 0
+Loop:
 	for pos < len(i.ins) {
 		ins := i.ins[pos]
 		switch ins.Operation {
@@ -77,13 +78,15 @@ func (i *Executor) Execute() {
 		case OperationNegate:
 			val := i.scratchVarFromOperand(ins.Operand1)
 			i.scratch[ins.Ret] = !val
+		case OperationExit:
+			break Loop
 		case OperationNoop:
 			// Nothing
 		default:
 			i.setErr(fmt.Errorf("unexpected operation %v", ins.Operation))
 		}
 		if i.err != nil {
-			break
+			break Loop
 		}
 		pos++
 	}

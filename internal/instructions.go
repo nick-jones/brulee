@@ -25,6 +25,7 @@ const (
 	OperationSubScore
 	OperationSetScore
 	OperationNegate
+	OperationExit
 )
 
 var operationToStringMap = map[Operation]string{
@@ -45,6 +46,7 @@ var operationToStringMap = map[Operation]string{
 	OperationSubScore:             "SUB_SCORE",
 	OperationSetScore:             "SET_SCORE",
 	OperationNegate:               "NEGATE",
+	OperationExit:                 "EXIT",
 }
 
 func (o Operation) String() string {

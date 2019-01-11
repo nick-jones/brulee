@@ -7,6 +7,7 @@ type Root struct {
 type Statement struct {
 	Rule        *Rule        `@@`
 	ScoreChange *ScoreChange `| @@`
+	Exit        bool         `| @( "exit" )`
 }
 
 type Rule struct {
