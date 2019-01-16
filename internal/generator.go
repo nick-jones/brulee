@@ -218,6 +218,7 @@ func (ig *InstructionsGenerator) evaluateScoreChange(sc ScoreChange) {
 	})
 }
 
+// nolint:gocyclo
 func operationFromEqualityOperator(s string) (op Operation, err error) {
 	switch s {
 	case "==":
@@ -255,7 +256,7 @@ func operandFromMixedValue(mv MixedValue) (op Operand, err error) {
 	case mv.Int != nil:
 		op = IntOperand{Value: *mv.Int}
 	case mv.Score != nil:
-		op = ScoreOperand{Name: (*mv.Score).Name}
+		op = ScoreOperand{Name: mv.Score.Name}
 	case mv.Regexp != nil:
 		op, err = buildRegexpOperand(*mv.Regexp)
 	default:
@@ -277,7 +278,7 @@ func operandFromIntValue(iv IntValue) (op Operand, err error) {
 	case iv.Int != nil:
 		op = IntOperand{Value: *iv.Int}
 	case iv.Score != nil:
-		op = ScoreOperand{Name: (*iv.Score).Name}
+		op = ScoreOperand{Name: iv.Score.Name}
 	default:
 		err = fmt.Errorf("unresolvable int value %+v", iv)
 	}

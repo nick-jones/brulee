@@ -23,6 +23,7 @@ func NewExecutor(ins []Instruction, vars map[string]string) *Executor {
 	}
 }
 
+// nolint:gocyclo
 func (i *Executor) Execute() {
 	pos := 0
 Loop:

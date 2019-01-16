@@ -1,3 +1,5 @@
+// participle tags upset govet
+// nolint:govet
 package internal
 
 type Root struct {
