@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DATA-DOG/godog"
-	"github.com/DATA-DOG/godog/gherkin"
+	"github.com/cucumber/godog"
+	"github.com/cucumber/messages-go/v10"
 )
 
 var (
@@ -18,13 +18,13 @@ var (
 	scores  map[string]int
 )
 
-func theProgram(p *gherkin.DocString) error {
+func theProgram(p *messages.PickleStepArgument_PickleDocString) error {
 	var err error
 	program, err = Compile(strings.NewReader(p.Content))
 	return err
 }
 
-func variables(table *gherkin.DataTable) error {
+func variables(table *messages.PickleStepArgument_PickleTable) error {
 	for _, row := range table.Rows[1:] {
 		vars[row.Cells[0].Value] = row.Cells[1].Value
 	}
@@ -37,7 +37,7 @@ func theProgramIsRun() error {
 	return err
 }
 
-func theScoreOutputIs(table *gherkin.DataTable) error {
+func theScoreOutputIs(table *messages.PickleStepArgument_PickleTable) error {
 	if len(table.Rows)-1 != len(scores) {
 		return fmt.Errorf("row count mismatch, expected %d, actual %d", len(table.Rows)-1, len(scores))
 	}
@@ -61,34 +61,31 @@ func theScoreOutputIsEmpty() error {
 	return nil
 }
 
-func FeatureContext(s *godog.Suite) {
-	s.BeforeScenario(func(i interface{}) {
+func InitializeScenario(ctx *godog.ScenarioContext) {
+	ctx.BeforeScenario(func(_ *godog.Scenario) {
 		program = Program{}
 		vars = map[string]string{}
 		scores = map[string]int{}
 	})
-	s.Step(`^the program:$`, theProgram)
-	s.Step(`^variables:$`, variables)
-	s.Step(`^the program is run$`, theProgramIsRun)
-	s.Step(`^the score output is:$`, theScoreOutputIs)
-	s.Step(`^the score output is empty$`, theScoreOutputIsEmpty)
+	ctx.Step(`^the program:$`, theProgram)
+	ctx.Step(`^variables:$`, variables)
+	ctx.Step(`^the program is run$`, theProgramIsRun)
+	ctx.Step(`^the score output is:$`, theScoreOutputIs)
+	ctx.Step(`^the score output is empty$`, theScoreOutputIsEmpty)
 }
 
 func TestMain(m *testing.M) {
-	format := "progress"
-	for _, arg := range os.Args[1:] {
-		if arg == "-test.v=true" {
-			format = "pretty"
-			break
-		}
-	}
-	status := godog.RunWithOptions("godog", func(s *godog.Suite) {
-		FeatureContext(s)
-	}, godog.Options{
-		Format:    format,
+	opts := godog.Options{
+		Format:    "progress",
 		Paths:     []string{"features"},
 		Randomize: time.Now().UTC().UnixNano(),
-	})
+	}
+
+	status := godog.TestSuite{
+		Name: "brulee",
+		ScenarioInitializer:  InitializeScenario,
+		Options: &opts,
+	}.Run()
 
 	if st := m.Run(); st > status {
 		status = st
